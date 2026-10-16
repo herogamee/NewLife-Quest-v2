@@ -26,6 +26,10 @@ export function sceneAssets(music = 'assets/audio/riverside-theme.ogg') {
   return [...IMAGE_ASSETS, 'assets/fonts/Mali-Bold.ttf', 'assets/fonts/NotoSansThaiLooped-Variable.ttf', music,
     'assets/audio/menu-click.wav', 'assets/audio/menu-enter.wav', 'assets/audio/menu-back.wav'];
 }
+export function loadingAssets(music = 'assets/audio/riverside-theme.ogg') {
+  return [...sceneAssets(music), 'assets/art/loading-town.webp', 'assets/art/loading-cat.webp'];
+}
+export function sceneFromHash(hash) { return ['#loading', '#start'].includes(hash) ? 'loading' : 'home'; }
 export function nextBlink(random = Math.random, character = 'male') {
   return (character === 'female' ? 3200 : 2500) + Math.floor(random() * 2800);
 }

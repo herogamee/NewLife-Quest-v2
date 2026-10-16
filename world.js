@@ -20,8 +20,9 @@ export class FrameMeter {
   }
 }
 export class LivingWorld {
-  constructor(canvas, characters) {
+  constructor(canvas, characters, { river = false } = {}) {
     this.canvas = canvas; this.characters = characters;
+    this.river = river;
     this.context = canvas.getContext('2d');
     this.enabled = true; this.hidden = false; this.frame = 0; this.lastFrame = 0;
     this.elapsed = 0; this.previous = 0;
@@ -44,11 +45,11 @@ export class LivingWorld {
     for (const timer of this.blinkTimers) clearTimeout(timer);
     for (const timer of this.closeTimers) clearTimeout(timer);
     this.blinkTimers.clear(); this.closeTimers.clear();
-    this.characters.classList.remove('is-blinking-male', 'is-blinking-female');
+    this.characters?.classList.remove('is-blinking-male', 'is-blinking-female');
     this.previous = 0; this.lastFrame = 0;
     if (enabled && !hidden) {
       this.frame = requestAnimationFrame(this.loop);
-      this.scheduleBlink('male'); this.scheduleBlink('female');
+      if (this.characters) { this.scheduleBlink('male'); this.scheduleBlink('female'); }
     } else this.draw();
   }
   scheduleBlink(character) {
@@ -93,8 +94,8 @@ export class LivingWorld {
       ctx.translate(0, -1); ctx.strokeStyle = 'rgba(255,254,234,.94)'; ctx.stroke(); ctx.translate(0, 1);
     }
     for (let i = 0; i < 34; i++) {
-      const x = (.17 + ((i * .0713) % .39)) * w;
-      const y = (.535 + ((i * .0177) % .108)) * h;
+      const x = (this.river ? .28 + ((i * .0713) % .42) : .17 + ((i * .0713) % .39)) * w;
+      const y = (this.river ? .55 + ((i * .0177) % .22) : .535 + ((i * .0177) % .108)) * h;
       const opacity = Math.max(0, Math.sin(t * (1.2 + i % 3 * .13) + i * 2.17)) ** 5 * .7;
       const len = (2.5 + (i % 4) * 1.3) * w / 1672;
       ctx.strokeStyle = `rgba(255,255,233,${opacity})`; ctx.lineWidth = Math.max(.8, w / 1672);

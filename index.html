@@ -11,6 +11,7 @@
   <link rel="preload" as="image" href="assets/art/newlife-logo.webp">
   <link rel="preload" as="font" href="assets/fonts/Mali-Bold.ttf" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="loading.css">
   <script type="module" src="app.js"></script>
 </head>
 <body>
@@ -49,8 +50,10 @@
       <div class="scene-vignette"></div>
     </div>
 
+    <span id="header-home-slot" hidden></span>
     <header class="site-header">
       <span class="edition"><svg><use href="#i-star"/></svg> โลกใบใหม่ เรื่องราวของคุณ</span>
+      <button class="utility-button route-back" id="route-back" type="button" hidden><svg class="line-icon" aria-hidden="true"><use href="#i-back"/></svg><span>กลับเว็บไซต์</span></button>
       <div class="sound-tools" role="group" aria-label="ควบคุมเสียงและภาพ">
         <button class="utility-button" id="music-toggle" type="button" aria-pressed="false" aria-label="เปิดเพลง">
           <svg class="line-icon"><use href="#i-music"/></svg><span id="music-label">เปิดเพลง</span><i class="sound-dot"></i>
@@ -69,7 +72,7 @@
         <h1 class="brand"><span class="sr-only">NewLife Quest — Another Story Awaits You</span><img src="assets/art/newlife-logo.webp" width="1619" height="971" alt="" fetchpriority="high"></h1>
         <p class="tagline">เรื่องราวบทใหม่ <span>กำลังรอคุณอยู่</span></p>
         <div class="little-divider" aria-hidden="true"><span></span><svg><use href="#i-star"/></svg><span></span></div>
-        <button class="start-button" id="start-button" type="button" aria-haspopup="dialog">
+        <button class="start-button" id="start-button" type="button" aria-controls="loading-page">
           <svg class="button-jewel jewel-left" aria-hidden="true"><use href="#i-star"/></svg>
           <span>เริ่มเล่นเกม</span><svg class="start-arrow line-icon" aria-hidden="true"><use href="#i-arrow"/></svg>
           <svg class="button-jewel jewel-right" aria-hidden="true"><use href="#i-star"/></svg>
@@ -108,13 +111,64 @@
     <footer class="site-footer"><span>© 2026 NewLife Quest</span><span>Another Story Awaits You</span></footer>
   </main>
 
+  <main class="loading-page" id="loading-page" aria-labelledby="loading-heading" hidden>
+    <div class="scenery loading-scenery" aria-hidden="true">
+      <div class="world loading-world">
+        <img class="town loading-town" id="loading-town" data-src="assets/art/loading-town.webp" width="1672" height="941" alt="">
+        <div class="loading-water"></div>
+        <div class="cloud cloud-one"><img src="assets/art/cloud.webp" width="2172" height="724" alt=""></div>
+        <div class="cloud cloud-two"><img src="assets/art/cloud.webp" width="2172" height="724" alt=""></div>
+        <canvas id="loading-effects"></canvas>
+      </div>
+      <div class="scene-light"></div><div class="scene-vignette"></div>
+    </div>
+    <div id="loading-controls"></div>
+    <section class="loading-stage">
+      <a class="loading-brand" href="#home" id="loading-brand" aria-label="NewLife Quest — กลับหน้าเว็บไซต์"><img src="assets/art/newlife-logo.webp" width="1619" height="971" alt="NewLife Quest — Another Story Awaits You"></a>
+      <div class="loading-copy">
+        <h1 id="loading-heading" tabindex="-1">กำลังเตรียมการผจญภัย</h1>
+        <div class="loading-divider" aria-hidden="true"><span></span><svg><use href="#i-star"/></svg><span></span></div>
+      </div>
+      <div class="loading-panel" id="loading-panel" style="--load-progress:0%">
+        <svg class="loading-ornament ornament-left" aria-hidden="true"><use href="#i-star"/></svg>
+        <svg class="loading-ornament ornament-right" aria-hidden="true"><use href="#i-star"/></svg>
+        <div class="loading-meter-row">
+          <div class="loading-track-wrap">
+            <progress class="loading-track" id="loading-progress" value="0" max="100" aria-label="ความคืบหน้าการโหลดข้อมูล"></progress>
+            <svg class="progress-compass" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="27" fill="#b46d20" stroke="#ffeb8b" stroke-width="3"/><use href="#i-star"/></svg>
+          </div>
+          <output class="loading-percent" id="loading-percent" aria-hidden="true">0%</output>
+        </div>
+        <p class="loading-phase" id="loading-phase">กำลังโหลดข้อมูลเกม…</p>
+      </div>
+      <p class="loading-file-status" id="loading-file-status" role="status" aria-live="polite">กำลังเตรียมไฟล์…</p>
+      <div class="loading-actions" id="loading-actions" hidden><button class="blue-button" id="loading-retry" type="button">ลองโหลดอีกครั้ง <svg class="line-icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
+      <p class="loading-next" id="loading-next" hidden><svg class="line-icon" aria-hidden="true"><use href="#i-check"/></svg>หน้าถัดไป: เข้าสู่เกม · อยู่ในขั้นตอนพัฒนาถัดไป</p>
+      <div class="loading-mascot" aria-hidden="true"><div class="mascot-shadow"></div><img id="loading-cat" data-src="assets/art/loading-cat.webp" width="1145" height="1374" alt=""></div>
+      <aside class="loading-hint" aria-label="เรื่องเล่าระหว่างเดินทาง"><svg aria-hidden="true"><use href="#i-star"/></svg><p id="loading-hint">พบเพื่อนใหม่ แล้วออกผจญภัยไปด้วยกัน</p><svg aria-hidden="true"><use href="#i-star"/></svg></aside>
+    </section>
+    <footer class="site-footer loading-footer"><span>© 2026 NewLife Quest</span><span>Another Story Awaits You</span></footer>
+  </main>
+
+  <section class="rotate-notice" id="rotate-notice" aria-labelledby="rotate-title" hidden>
+    <div class="rotate-card">
+      <img class="rotate-logo" src="assets/art/newlife-logo.webp" width="1619" height="971" alt="NewLife Quest">
+      <svg class="rotate-phone" viewBox="0 0 180 130" aria-hidden="true"><path d="M35 35A53 53 0 0 1 135 25m-4-17 7 20-22-2" fill="none" stroke="#c39245" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="48" y="49" width="95" height="57" rx="9" fill="#fff4d7" stroke="#a96c2b" stroke-width="4"/><rect x="58" y="56" width="72" height="42" rx="3" fill="#9cddf3" stroke="#d8ac60" stroke-width="2"/><circle cx="137" cy="78" r="3" fill="#a96c2b"/><path d="m84 78 10-13 11 13-11 14Z" fill="#fff4a7" stroke="#b87b26" stroke-width="2"/></svg>
+      <h2 id="rotate-title" tabindex="-1">หมุนจอ แล้วออกเดินทาง</h2>
+      <p>หน้าเกมใช้มุมมองแนวนอน<br>หมุนโทรศัพท์เป็นแนวนอนเพื่อไปต่อได้เลย</p>
+      <p class="rotate-small">ข้อมูลยังโหลดต่อให้ ระหว่างที่คุณหมุนหน้าจอ</p>
+      <button class="blue-button" id="rotate-try" type="button" hidden>เปิดเต็มจอแนวนอน</button>
+      <button class="paper-button" id="rotate-back" type="button"><svg class="line-icon" aria-hidden="true"><use href="#i-back"/></svg>กลับหน้าเว็บไซต์</button>
+    </div>
+  </section>
+
   <dialog class="fantasy-dialog feature-dialog" id="feature-dialog" aria-labelledby="feature-title">
     <button class="dialog-close" type="button" data-close aria-label="ปิดหน้าต่าง"><svg class="line-icon"><use href="#i-close"/></svg></button>
     <div class="dialog-emblem"><svg aria-hidden="true"><use id="feature-icon" href="#i-map"/></svg></div>
     <p class="eyebrow">NEWLIFE QUEST</p><h2 id="feature-title">ผจญภัย</h2>
     <p class="dialog-description" id="feature-description"></p>
     <div class="detail-tags" id="feature-tags"></div>
-    <button class="blue-button" type="button" id="feature-start">เริ่มเล่นเกม <svg class="line-icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
+    <button class="blue-button" type="button" id="feature-start" aria-controls="loading-page">เริ่มเล่นเกม <svg class="line-icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
   </dialog>
 
   <dialog class="fantasy-dialog settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
@@ -130,17 +184,6 @@
     <button class="blue-button" type="button" data-close>เรียบร้อย <svg class="line-icon" aria-hidden="true"><use href="#i-check"/></svg></button>
   </dialog>
 
-  <dialog class="fantasy-dialog launch-dialog" id="launch-dialog" aria-labelledby="launch-title" aria-describedby="launch-description">
-    <button class="dialog-close" type="button" data-close aria-label="กลับหน้าเว็บไซต์"><svg class="line-icon"><use href="#i-close"/></svg></button>
-    <svg class="loading-compass" aria-hidden="true"><use href="#i-star"/></svg>
-    <p class="eyebrow">YOUR NEXT ADVENTURE</p><h2 id="launch-title">เตรียมตัวออกเดินทาง</h2>
-    <p class="dialog-description" id="launch-description">กำลังตรวจและโหลดทรัพยากรของหน้าเริ่มเกม</p>
-    <progress id="launch-progress" value="0" max="100" aria-label="ความคืบหน้าการโหลด"></progress>
-    <p class="load-status" id="load-status" role="status" aria-live="polite">กำลังเตรียมไฟล์…</p>
-    <p class="build-note" id="build-note" hidden>นี่คือหน้าเว็บไซต์เข้าเกมเวอร์ชันแรก<br>หน้าล็อกอินและสร้างตัวละครจะพัฒนาเป็นลำดับถัดไป</p>
-    <button class="blue-button" id="launch-retry" type="button" hidden>ลองโหลดอีกครั้ง</button>
-    <button class="paper-button" type="button" data-close><svg class="line-icon" aria-hidden="true"><use href="#i-back"/></svg> กลับหน้าเว็บไซต์</button>
-  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <output class="performance-meter" id="performance-meter" aria-label="ความลื่นโดยประมาณ" hidden>กำลังวัด FPS…</output>
 </body>
