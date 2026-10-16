@@ -1,7 +1,7 @@
 import {PreviewVault,ITEMS,LOCATIONS,TOOLBAR,QUESTS,validateAccount,validateCharacter,act} from './game-model.js?v=flow1';
 import {BUILDING_BOUNDS} from './game-assets.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const art=(name,alt='',className='')=>name==='outfit'?`<span class="outfit-thumb" role="img" aria-label="${esc(alt||'ชุดนักเดินทาง')}"><img src="assets/game/outfit.webp?v=city2" alt="" draggable="false"></span>`:`<img src="assets/game/${name}.webp?v=city2" alt="${esc(alt)}" class="${className}" draggable="false">`;
+const art=(name,alt='',className='')=>name==='outfit'?`<span class="outfit-thumb" role="img" aria-label="${esc(alt||'ชุดนักเดินทาง')}"><img data-src="assets/game/outfit.webp?v=city2" alt="" draggable="false"></span>`:`<img data-src="assets/game/${name}.webp?v=city2" alt="${esc(alt)}" class="${className}" draggable="false">`;
 const icon=(id)=>`<svg class="line-icon" aria-hidden="true"><use href="#i-${id}"/></svg>`;
 export function createGameUI({storage,sessionStorage,audio,toast,navigate,openDialog}){
   document.body.insertAdjacentHTML('beforeend',`
@@ -43,8 +43,9 @@ export function createGameUI({storage,sessionStorage,audio,toast,navigate,openDi
   </main>
   <dialog class="fantasy-dialog service-dialog" id="service-dialog" aria-labelledby="service-title"><button class="dialog-close" data-close type="button" aria-label="ปิดหน้าต่าง">${icon('close')}</button><p class="eyebrow">NEWLIFE QUEST · เมืองริมน้ำ</p><h2 id="service-title"></h2><div id="service-body"></div><p id="service-feedback" class="service-feedback" role="status" aria-live="polite"></p></dialog>
   <dialog class="fantasy-dialog bag-dialog" id="bag-dialog" aria-labelledby="bag-title"><button class="dialog-close" data-close type="button" aria-label="ปิดกระเป๋า">${icon('close')}</button><h2 id="bag-title" class="bag-title">กระเป๋านักผจญภัย</h2><div class="bag-layout"><section class="bag-character"><div class="bag-profile"><strong id="bag-name"></strong><span id="bag-level"></span></div><div class="bag-dressing"><div id="bag-slots-left" class="equipment-column"></div><div class="bag-stage"><img id="bag-avatar" src="assets/game/male.webp?v=city2" alt="ตัวละครของคุณ"><p id="bag-equipment-summary"></p></div><div id="bag-slots-right" class="equipment-column"></div></div><div class="bag-stats" id="bag-stats"></div></section><section class="bag-inventory"><div class="bag-tabs" role="group" aria-label="หมวดกระเป๋า"><button type="button" data-bag-tab="all" aria-pressed="true">ทั้งหมด</button><button type="button" data-bag-tab="fashion" aria-pressed="false">คลังแฟชั่น</button><button type="button" data-bag-tab="weapon" aria-pressed="false">อาวุธ</button><button type="button" data-bag-tab="pet" aria-pressed="false">สัตว์เลี้ยง</button><button type="button" data-bag-tab="material" aria-pressed="false">ไอเท็ม</button></div><label class="bag-search">ค้นหาไอเท็ม<input id="bag-search" type="search" placeholder="ค้นหาไอเท็ม…"></label><div class="inventory-grid" id="inventory-grid" aria-label="ช่องเก็บของ"></div><div id="bag-item-details" class="bag-item-details" role="status">เลือกไอเท็มเพื่อดูรายละเอียดหรือสวมใส่</div><div class="bag-footer"><span id="bag-count"></span><button class="blue-button" type="button" data-close>เรียบร้อย ${icon('check')}</button></div></section></div></dialog>
-  `);
+  `.replaceAll(' src="', ' data-src="').replaceAll(/(assets\/art\/[^"?]+)\?v=city2/g, '$1'));
   const $=id=>document.getElementById(id);
+  function hydrate(root){for(const image of root.querySelectorAll('img[data-src]')){image.src=image.dataset.src;image.removeAttribute('data-src');}}
   const vault=new PreviewVault(storage,sessionStorage);vault.restore();
   const draft={mode:'account',username:'',password:'',character:{name:'นักผจญภัยตัวน้อย',gender:'male'},accountReady:false,characterReady:false};
   let route='home',service=null,opener=null,restTimer=null,fishTimer=null,enemy=null,busy=false,bagTab='all',selectedItem=null;
@@ -68,8 +69,11 @@ export function createGameUI({storage,sessionStorage,audio,toast,navigate,openDi
         const button=document.querySelector(`[data-step="${name}"]`);button.disabled=i>steps.indexOf(next);button.setAttribute('aria-current',name===next?'step':'false');button.dataset.done=String(i<steps.indexOf(next));
       }
       $('wizard-account').hidden=next!=='register';$('wizard-character').hidden=next!=='character';$('wizard-confirm').hidden=next!=='confirm';
-      $('confirm-account').textContent=draft.mode==='guest'?'ผู้มาเยือน':draft.username;$('confirm-name').textContent=draft.character.name;$('confirm-gender').textContent=draft.character.gender==='male'?'ชาย':'หญิง';$('confirm-portrait').src=`assets/game/${draft.character.gender}.webp?v=city2`;
+      $('confirm-account').textContent=draft.mode==='guest'?'ผู้มาเยือน':draft.username;$('confirm-name').textContent=draft.character.name;$('confirm-gender').textContent=draft.character.gender==='male'?'ชาย':'หญิง';if(next==='confirm'){$('confirm-portrait').removeAttribute('data-src');$('confirm-portrait').src=`assets/game/${draft.character.gender}.webp?v=city2`;}
     }
+    if(next==='login')hydrate($('login-page'));
+    if(['register','character','confirm'].includes(next)){hydrate(document.querySelector('.wizard-brand'));hydrate($(next==='register'?'wizard-account':next==='character'?'wizard-character':'wizard-confirm'));}
+    if(next==='city')hydrate($('city-page'));
     if(next==='city'){refreshCity();requestAnimationFrame(fitCity);}
   }
   function leave(){clearInterval(restTimer);clearTimeout(fishTimer);restTimer=null;fishTimer=null;service=null;enemy=null;}
@@ -107,7 +111,7 @@ export function createGameUI({storage,sessionStorage,audio,toast,navigate,openDi
     const b=BUILDING_BOUNDS[location.id],height=location.w*1672/941*b.height/b.width;
     const button=document.createElement('button');button.type='button';button.className='city-building';button.dataset.service=location.id;button.setAttribute('aria-label',location.name);button.setAttribute('aria-describedby','location-tooltip');
     button.style.cssText=`left:${location.x-location.w/2}%;top:${location.y-height}%;width:${location.w}%;height:${height}%;z-index:${Math.round(location.y)}`;
-    button.innerHTML=`<img src="assets/game/${location.id}.webp?v=city2" alt="" style="width:${1254/b.width*100}%;left:${-b.x/b.width*100}%;top:${-b.y/b.height*100}%"><span class="location-name">${location.name}</span>`;
+    button.innerHTML=`<img data-src="assets/game/${location.id}.webp?v=city2" alt="" style="width:${1254/b.width*100}%;left:${-b.x/b.width*100}%;top:${-b.y/b.height*100}%"><span class="location-name">${location.name}</span>`;
     for(const event of ['pointerenter','focus'])button.addEventListener(event,()=>showTooltip(location,button));for(const event of ['pointerleave','blur'])button.addEventListener(event,()=>{$('location-tooltip').hidden=true;});$('city-buildings').append(button);
   }
   $('city-toolbar').innerHTML=TOOLBAR.map(([id,label])=>`<button type="button" data-service="${id}">${id==='settings'?`<span class="toolbar-cog">${icon('settings')}</span>`:id==='skills'?'<span class="toolbar-orb"><svg aria-hidden="true"><use href="#i-star"/></svg></span>':art(id==='profile'?'male':'icon-'+id)}<span>${label}</span></button>`).join('');
@@ -157,7 +161,7 @@ export function createGameUI({storage,sessionStorage,audio,toast,navigate,openDi
     else if(service==='river-harbor'){title='ท่าเรือแม่น้ำ';html=`<div class="place-illustration">${art('river-harbor')}</div><p class="service-intro">พักนั่งริมน้ำ ลองหย่อนเบ็ดสักครั้ง</p><p>ปลาในกระเป๋า ${p.inventory.fish||0} ตัว</p>${actionButton('fish','เริ่มตกปลา · รอ 3 วินาที')}<p class="local-note">รับปลา 1 ตัว และ 2 EXP เมื่อเสร็จ · ปิดหน้าต่างเพื่อยกเลิกได้</p>`;}
     else if(service==='dungeon'){title='ดันเจี้ยน · ลานสไลม์';html=renderBattle();}
     else if(service==='chat'){title='แชตเมือง';html=`<p class="local-note">สมุดแชตทดสอบในเครื่องนี้ ข้อความยังไม่ส่งถึงผู้เล่นอื่น</p><div class="chat-log">${p.chat.map(m=>`<p><strong>${esc(m.name)}</strong><span>${esc(m.text)}</span></p>`).join('')||'<p class="empty-state">ทักทายเมืองริมน้ำได้เลย</p>'}</div><form id="chat-form" class="inline-form"><input name="message" aria-label="ข้อความแชต" maxlength="160" required placeholder="พิมพ์ข้อความ…"><button type="submit" class="small-gold-button">ส่ง</button></form>`;}
-    $('service-title').textContent=title;body.innerHTML=html;
+    $('service-title').textContent=title;body.innerHTML=html;hydrate(body);
   }
   function renderBattle(){const p=vault.profile;if(!enemy)return `<div class="dungeon-banner">${art('dungeon')}</div><p class="service-intro">การต่อสู้ตัวอย่างแบบผลัดกันโจมตี<br>ชนะรับ 60 เหรียญ และ 30 EXP</p><p>HP ของคุณ ${p.hp}/100 · ยาฟื้นพลัง ${p.inventory.potion||0} ขวด</p>${actionButton(p.hp?'battle':'revive',p.hp?'เข้าสู่การต่อสู้':'พักฟื้นฟรีก่อนออกเดินทาง')}`;
     const over=enemy.hp<=0||p.hp<=0;return `<div class="battle-arena"><div>${art(p.gender)}<strong>${esc(p.name)}</strong><meter min="0" max="100" value="${p.hp}" aria-label="พลังชีวิตของคุณ"></meter><span>HP ${p.hp}/100</span></div><span class="battle-vs">VS</span><div><svg class="slime" viewBox="0 0 150 130" aria-label="สไลม์"><path d="M20 90Q10 60 47 38Q70 28 75 7Q88 37 107 40Q148 61 133 99Q120 123 75 119Q26 123 20 90" fill="#78d9dc" stroke="#208a9d" stroke-width="4"/><ellipse cx="55" cy="76" rx="5" ry="9" fill="#214752"/><ellipse cx="95" cy="76" rx="5" ry="9" fill="#214752"/><path d="M65 91q10 10 20 0" fill="none" stroke="#214752" stroke-width="4"/><ellipse cx="43" cy="52" rx="15" ry="7" fill="#e1ffff" opacity=".8"/></svg><strong>สไลม์ริมน้ำ</strong><meter min="0" max="60" value="${Math.max(0,enemy.hp)}" aria-label="พลังชีวิตสไลม์"></meter><span>HP ${Math.max(0,enemy.hp)}/60</span></div></div><p class="battle-log" role="status">${esc(enemy.log)}</p><div class="battle-actions">${actionButton('attack','โจมตี','','blue-button',over)}${actionButton('potion','ใช้ยา ('+(p.inventory.potion||0)+')','','paper-button',over||!p.inventory.potion||p.hp===100)}${over?actionButton('battle',p.hp?'เล่นอีกรอบ':'พักฟื้นก่อน', '', 'gold-button',!p.hp):''}</div>${!p.hp?actionButton('revive','พักฟื้นฟรี'):''}`;
@@ -179,6 +183,7 @@ export function createGameUI({storage,sessionStorage,audio,toast,navigate,openDi
   for(const id of ['service-dialog','bag-dialog'])$(id).addEventListener('close',()=>{if(!$('service-dialog').open&&!$('bag-dialog').open)leave();});
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&fishTimer){clearTimeout(fishTimer);fishTimer=null;if(service==='river-harbor'){renderService();$('service-feedback').textContent='หยุดตกปลาเมื่อสลับแท็บ เริ่มใหม่ได้เลย';}}});
   function renderBag(){
+    hydrate($('bag-dialog'));
     const p=vault.profile;$('bag-name').textContent=p.name;$('bag-level').textContent=`Lv.${1+Math.floor(p.xp/100)} · ${p.xp} EXP`;$('bag-avatar').src=`assets/game/${p.gender}.webp?v=city2`;
     const slots=[['หมวก',null],['แว่นตา',null],['ทรงผม',null],['ใบหน้า',null],['เสื้อผ้า',p.equipped.fashion],['ดวงตา',null],['อาวุธ',p.equipped.weapon],['สัตว์เลี้ยง',p.equipped.pet],['สร้อยคอ',null],['แหวน',null],['ปีก',p.equipped.fashion==='wings'?'wings':null],['เกราะ',null]];
     const slotHtml=([name,id])=>`<div class="equipment-slot">${id?art(ITEMS[id].image.replace('.webp',''),ITEMS[id].name):`<span class="empty-equipment">◇</span>`}<span>${name}</span></div>`;
@@ -189,6 +194,7 @@ export function createGameUI({storage,sessionStorage,audio,toast,navigate,openDi
     $('inventory-grid').innerHTML=[...ids.map(id=>`<button type="button" class="inventory-cell ${selectedItem===id?'selected':''}" data-item="${id}" aria-label="${ITEMS[id].name} จำนวน ${p.inventory[id]}">${art(ITEMS[id].image.replace('.webp',''))}<small>${p.inventory[id]}</small>${Object.values(p.equipped).includes(id)?'<b class="equipped-check">✓</b>':''}</button>`),...Array.from({length:Math.max(0,24-ids.length)},()=>'<div class="inventory-cell empty" aria-hidden="true"></div>')].join('');
     $('bag-count').textContent=`${Object.values(p.inventory).filter(n=>n>0).length}/300 ช่อง · ${ids.length} รายการที่แสดง`;
     const item=ITEMS[selectedItem];$('bag-item-details').innerHTML=item&&p.inventory[selectedItem]?`<div><strong>${item.name}</strong><p>${item.description}</p></div>${['weapon','fashion','pet'].includes(item.kind)?actionButton('equip',p.equipped[item.kind]===selectedItem?'ถอด':'สวมใส่',selectedItem,'small-gold-button'):selectedItem==='potion'?actionButton('potion','ใช้ยา',selectedItem,'small-gold-button',p.hp===100):''}`:'เลือกไอเท็มเพื่อดูรายละเอียดหรือสวมใส่';
+    hydrate($('bag-dialog'));
   }
   document.querySelectorAll('[data-bag-tab]').forEach(button=>button.addEventListener('click',()=>{sound();bagTab=button.dataset.bagTab;renderBag();}));$('bag-search').addEventListener('input',renderBag);
   $('inventory-grid').addEventListener('click',event=>{const button=event.target.closest('[data-item]');if(button){sound();selectedItem=button.dataset.item;renderBag();}});

@@ -29,6 +29,12 @@ export function sceneAssets(music = 'assets/audio/riverside-theme.ogg') {
 export function loadingAssets(music = 'assets/audio/riverside-theme.ogg') {
   return [...sceneAssets(music), 'assets/art/loading-town.webp', 'assets/art/loading-cat.webp', ...GAME_IMAGE_ASSETS];
 }
+// Only resources needed by the destination block entry. Other screens load on demand.
+export function entryAssets(destination = 'login') {
+  const common = ['assets/art/newlife-logo.webp', 'assets/fonts/Mali-Bold.ttf', 'assets/fonts/NotoSansThaiLooped-Variable.ttf'];
+  if (destination !== 'city') return [...common, 'assets/art/riverside-town.webp', 'assets/art/adventurers-open.webp'];
+  return [...common, ...['city-ground', 'male', 'female', 'blacksmith', 'auction-house', 'adventurer-guild', 'hall-of-fame', 'dungeon', 'market', 'academy', 'hot-springs', 'wedding-chapel', 'river-harbor', 'icon-buy-coin', 'icon-bag', 'icon-mail', 'icon-quests', 'icon-friends', 'icon-gifts', 'icon-news'].map(name => `assets/game/${name}.webp?v=city2`)];
+}
 export const GAME_IMAGE_ASSETS=Object.freeze(['city-ground','male','female','blacksmith','auction-house','adventurer-guild','hall-of-fame','dungeon','market','academy','hot-springs','wedding-chapel','river-harbor','icon-buy-coin','icon-shop','icon-bag','icon-mail','icon-quests','icon-friends','icon-gifts','icon-news','icon-back','sword','potion','upgrade_stone','pet_fox','outfit','wings','fish','bag-stage','bag-slot','bag-header'].map(name=>`assets/game/${name}.webp`));
 export function sceneFromHash(hash) { if(['#loading','#start'].includes(hash))return 'loading';const name=hash.slice(1);return ['login','register','character','confirm','city'].includes(name)?name:'home'; }
 export function nextBlink(random = Math.random, character = 'male') {

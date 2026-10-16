@@ -54,3 +54,34 @@ export class LoadingSession {
     }
   }
 }
+
+// A reveal timer prevents cached resources flashing a loading page. It never
+// advances progress or delays readiness; errors always reveal the retry controls.
+export class EntryLoader {
+  constructor({ onReveal = () => {}, onState = () => {}, onReady = () => {}, revealMs = 180,
+    schedule = (fn, ms) => setTimeout(fn, ms), unschedule = timer => clearTimeout(timer), ...sessionOptions } = {}) {
+    Object.assign(this, { onReveal, onState, onReady, revealMs, schedule, unschedule });
+    this.active = false; this.visible = false;
+    this.session = new LoadingSession({ ...sessionOptions, onState: state => this.update(state) });
+  }
+  reveal() {
+    if (!this.active || this.visible) return;
+    this.visible = true; this.onReveal(); this.onState(this.session.state);
+  }
+  update(state) {
+    if (!this.active) return;
+    if (state.phase === 'ready') {
+      this.unschedule(this.timer); this.active = false; this.onReady();
+    } else if (state.phase === 'error') {
+      this.unschedule(this.timer); this.reveal(); this.onState(state);
+    } else if (this.visible) this.onState(state);
+  }
+  start(resources) {
+    this.cancel(); this.active = true; this.visible = false;
+    this.timer = this.schedule(() => this.reveal(), this.revealMs);
+    return this.session.start(resources);
+  }
+  cancel() {
+    this.active = false; this.unschedule(this.timer); this.session.cancel();
+  }
+}

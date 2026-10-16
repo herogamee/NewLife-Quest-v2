@@ -1,9 +1,10 @@
-import { FEATURES, readPreferences, writePreferences, loadingAssets, sceneFromHash } from './core.js?v=flow2';
+import { FEATURES, readPreferences, writePreferences, entryAssets, sceneFromHash } from './core.js?v=entry1';
 import { Soundscape } from './audio.js';
 import { LivingWorld, FrameMeter } from './world.js';
-import { LoadingSession } from './loader.js';
+import { EntryLoader } from './loader.js?v=entry1';
 import { LandscapeMode } from './orientation.js';
-import { createGameUI } from './game.js?v=flow2';
+import { isMobileDevice, needsLandscape } from './device.js';
+import { createGameUI } from './game.js?v=entry1';
 
 const $ = id => document.getElementById(id);
 let storage;
@@ -11,7 +12,9 @@ try { storage = localStorage; } catch { storage = null; }
 const settings = readPreferences(storage);
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const finePointer = matchMedia('(hover: hover) and (pointer: fine)');
-const portrait = matchMedia('(max-width: 900px) and (orientation: portrait)');
+const portrait = matchMedia('(orientation: portrait)');
+const needsRotation = () => needsLandscape(navigator, portrait.matches);
+document.body.dataset.device = isMobileDevice(navigator) ? 'mobile' : 'desktop';
 const world = new LivingWorld($('world-effects'), $('adventurers'));
 const loadingWorld = new LivingWorld($('loading-effects'), null, { river: true });
 const frameMeter = new FrameMeter($('performance-meter'));
@@ -22,10 +25,16 @@ let activeScene = 'home', toastTimer, hintTimer, hintIndex = 0;
 let sessionStore;try { sessionStore=sessionStorage; } catch { sessionStore=null; }
 const gameUI=createGameUI({storage,sessionStorage:sessionStore,audio,toast,navigate,openDialog});
 const landscape = new LandscapeMode({ document, orientation: screen.orientation,
-  isMobile: () => matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent),
+  isMobile: () => isMobileDevice(navigator),
   isActive: () => activeScene !== 'home' });
 const hints = ['พบเพื่อนใหม่ แล้วออกผจญภัยไปด้วยกัน', 'แวะกิลด์นักผจญภัย ก่อนเริ่มเรื่องราวบทใหม่', 'เสื้อผ้าและอุปกรณ์ เล่าเรื่องราวในแบบคุณ', 'พักสักนิด แล้วค่อยออกเดินทางต่อ'];
-const loader = new LoadingSession({ onState: renderLoading, prepare: prepareLoadingArt });
+let entryDestination = 'login', pendingAssets = [];
+const loader = new EntryLoader({ onReveal: revealLoading, onState: renderLoading, prepare: prepareEntryArt,
+  onReady: () => {
+    if (activeScene !== 'loading') return;
+    history.replaceState({ nlqRoute: entryDestination }, '', '#' + entryDestination);
+    renderRoute();
+  } });
 
 function persist() { writePreferences(storage, settings); }
 function toast(message) {
@@ -45,7 +54,7 @@ function updateSoundUI(reason) {
 }
 function updateHints() {
   clearInterval(hintTimer);
-  if (activeScene !== 'loading' || document.hidden || portrait.matches || !settings.motion || reduceMotion.matches) return;
+  if (activeScene !== 'loading' || document.hidden || needsRotation() || !settings.motion || reduceMotion.matches) return;
   hintTimer = setInterval(() => { hintIndex = (hintIndex + 1) % hints.length; $('loading-hint').textContent = hints[hintIndex]; }, 8000);
 }
 function updateMotion() {
@@ -55,7 +64,7 @@ function updateMotion() {
   $('motion-toggle').checked = enabled; $('motion-toggle').disabled = reduceMotion.matches;
   $('motion-toggle').title = reduceMotion.matches ? 'อุปกรณ์นี้เปิดโหมดลดภาพเคลื่อนไหว' : '';
   world.update(enabled, document.hidden || activeScene !== 'home');
-  loadingWorld.update(enabled, document.hidden || activeScene !== 'loading' || portrait.matches);
+  loadingWorld.update(enabled, document.hidden || activeScene !== 'loading' || $('loading-page').hidden || needsRotation());
   frameMeter.update(settings.fps); updateHints();
   if (!enabled) resetPointer();
 }
@@ -64,7 +73,7 @@ function resetPointer() {
   document.documentElement.style.setProperty('--pointer-y', '0px');
 }
 function syncOrientation(focus = false) {
-  const show = activeScene !== 'home' && portrait.matches;
+  const show = activeScene !== 'home' && needsRotation();
   const wasShown = !$('rotate-notice').hidden;
   $('rotate-notice').hidden = !show;
   for(const id of ['loading-page','login-page','wizard-page','city-page'])$(id).inert=show;
@@ -119,16 +128,17 @@ function renderLoading(state) {
   if (activeScene !== 'loading') return;
   $('loading-page').dataset.state = state.phase;
   $('loading-panel').setAttribute('aria-busy', String(['loading', 'preparing'].includes(state.phase)));
-  $('loading-progress').value = state.percent; $('loading-percent').value = `${state.percent}%`;
-  $('loading-panel').style.setProperty('--load-progress', `${state.percent}%`);
-  $('loading-actions').hidden = state.phase !== 'error'; $('loading-next').hidden = state.phase !== 'ready';
+  const percent = state.phase === 'ready' ? 100 : Math.min(99, state.percent);
+  $('loading-progress').value = percent; $('loading-percent').value = `${percent}%`;
+  $('loading-panel').style.setProperty('--load-progress', `${percent}%`);
+  $('loading-actions').hidden = state.phase !== 'error';
   if (state.phase === 'error') {
     $('loading-heading').textContent = 'การเชื่อมต่อสะดุดนิดหน่อย';
     $('loading-phase').textContent = state.failure === 'prepare' ? 'จัดเตรียมภาพไม่สำเร็จ ลองโหลดอีกครั้งได้เลย' : 'บางไฟล์ยังโหลดไม่สำเร็จ ลองอีกครั้งได้เลย';
     $('loading-file-status').textContent = `โหลดสำเร็จ ${state.completed} / ${state.total} ไฟล์`;
   } else if (state.phase === 'ready') {
     $('loading-heading').textContent = 'เตรียมข้อมูลเรียบร้อยแล้ว';
-    $('loading-phase').textContent = 'ฉาก ภาพตัวละคร ฟอนต์ และเสียง พร้อมแล้ว';
+    $('loading-phase').textContent = 'ภาพและฟอนต์ของหน้าถัดไปพร้อมแล้ว';
     $('loading-file-status').textContent = `โหลดทรัพยากรครบ ${state.total} / ${state.total} ไฟล์`;
   } else {
     $('loading-heading').textContent = 'กำลังเตรียมการผจญภัย';
@@ -136,19 +146,30 @@ function renderLoading(state) {
     $('loading-file-status').textContent = `ตรวจและโหลดไฟล์ ${state.completed} / ${state.total}`;
   }
 }
-async function prepareLoadingArt(signal) {
-  await Promise.all([$('loading-town'), $('loading-cat')].map(async image => {
+async function prepareEntryArt(signal) {
+  await Promise.all(pendingAssets.filter(url => /\.webp(?:\?|$)/.test(url)).map(async url => {
     if (signal.aborted) throw signal.reason;
-    if (image.decode) await image.decode();
-    else if (!image.complete || !image.naturalWidth) await new Promise((resolve, reject) => {
-      image.addEventListener('load', resolve, { once: true }); image.addEventListener('error', reject, { once: true });
-    });
+    const image = new Image(); image.src = url;
+    await image.decode();
     if (!image.naturalWidth) throw new Error('Image not decoded');
   }));
   if (document.fonts?.load) await Promise.all([document.fonts.load('700 24px Mali'), document.fonts.load('400 20px NotoThai')]);
   if (signal.aborted) throw signal.reason;
 }
-function beginLoad() { return loader.start(loadingAssets(audio.music.src.endsWith('.mp3') ? 'assets/audio/riverside-theme.mp3' : 'assets/audio/riverside-theme.ogg')); }
+function revealLoading() {
+  if (activeScene !== 'loading') return;
+  $('home').hidden = true; $('loading-page').hidden = false;
+  document.body.dataset.scene = 'loading';
+  $('loading-controls').append(sharedHeader);
+  for (const image of [$('loading-town'), $('loading-cat')]) if (!image.getAttribute('src')) image.src = image.dataset.src;
+  loadingWorld.resize(); updateMotion(); syncOrientation();
+  $('loading-heading').focus({ preventScroll: true });
+}
+function beginLoad() {
+  entryDestination = gameUI.hasSession() ? 'city' : 'login';
+  pendingAssets = entryAssets(entryDestination);
+  return loader.start(pendingAssets);
+}
 function renderRoute({ initial = false } = {}) {
   const requested=sceneFromHash(location.hash),next=gameUI.resolveRoute(requested);
   if(next!==requested)history.replaceState(null,'','#'+next);
@@ -156,16 +177,17 @@ function renderRoute({ initial = false } = {}) {
   for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close();
   gameUI.leave();
   activeScene = next;
-  $('home').hidden = next !== 'home'; $('loading-page').hidden = next !== 'loading';
-  document.body.dataset.scene = next;
+  $('home').hidden = next !== 'home' && next !== 'loading'; $('loading-page').hidden = true;
+  document.body.dataset.scene = next === 'loading' ? 'home' : next;
+  $('start-button').disabled = next === 'loading';
+  $('start-button').setAttribute('aria-busy', String(next === 'loading'));
   document.querySelector('.edition').hidden = next !== 'home'; $('route-back').hidden = next === 'home'||next==='city';
   gameUI.show(next);
   const skip=document.querySelector('.skip-link');skip.href=next==='home'?'#start-button':next==='loading'?'#loading-heading':'#'+gameUI.focusTarget(next);skip.textContent=next==='home'?'ข้ามไปปุ่มเริ่มเล่นเกม':'ข้ามไปเนื้อหาหลัก';
   if (next === 'loading') {
-    $('loading-controls').append(sharedHeader);
-    for (const image of [$('loading-town'), $('loading-cat')]) if (!image.getAttribute('src')) image.src = image.dataset.src;
-    loadingWorld.resize(); document.title = 'NewLife Quest — กำลังเตรียมการผจญภัย';
-    beginLoad(); if (!initial) $('loading-heading').focus({ preventScroll: true });
+    $('header-home-slot').after(sharedHeader);
+    document.title = 'NewLife Quest — กำลังเตรียมการผจญภัย';
+    beginLoad();
   } else if(next==='home') {
     loader.cancel(); landscape.release(); $('header-home-slot').after(sharedHeader);
     world.resize(); document.title = 'NewLife Quest — เริ่มต้นการผจญภัย';
@@ -191,7 +213,6 @@ $('feature-start').addEventListener('click', () => { $('feature-dialog').close()
 $('route-back').addEventListener('click', goHome);
 $('loading-brand').addEventListener('click', event => { event.preventDefault(); goHome(); });
 $('loading-retry').addEventListener('click', () => { audio.gesture(); audio.effect('enter'); beginLoad(); });
-$('loading-next').addEventListener('click',()=>{audio.gesture();audio.effect('enter');navigate(gameUI.hasSession()?'city':'login');});
 document.querySelector('.skip-link').addEventListener('click',event=>{event.preventDefault();const target=$(event.currentTarget.getAttribute('href').slice(1));target?.focus({preventScroll:false});});
 $('rotate-back').addEventListener('click', goHome);
 $('rotate-try').addEventListener('click', async () => { audio.gesture(); audio.effect(); if (!await landscape.request()) toast('หมุนโทรศัพท์เป็นแนวนอน เพื่อไปต่อได้เลย'); });
