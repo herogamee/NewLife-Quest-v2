@@ -1,9 +1,9 @@
-import { FEATURES, readPreferences, writePreferences, loadingAssets, sceneFromHash } from './core.js?v=flow1';
+import { FEATURES, readPreferences, writePreferences, loadingAssets, sceneFromHash } from './core.js?v=flow2';
 import { Soundscape } from './audio.js';
 import { LivingWorld, FrameMeter } from './world.js';
 import { LoadingSession } from './loader.js';
 import { LandscapeMode } from './orientation.js';
-import { createGameUI } from './game.js?v=flow1';
+import { createGameUI } from './game.js?v=flow2';
 
 const $ = id => document.getElementById(id);
 let storage;
