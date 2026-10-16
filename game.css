@@ -20,3 +20,23 @@
 @media(max-width:1100px){.toolbar-orb{width:49px;height:49px}.toolbar-orb svg{width:32px;height:32px}}@media(orientation:landscape) and (max-height:520px){.toolbar-orb{width:40px;height:40px}.toolbar-orb svg{width:27px;height:27px}}@media(orientation:landscape) and (max-height:350px){.toolbar-orb{width:34px;height:34px}.toolbar-orb svg{width:23px;height:23px}}
 /* The camera owns panning. Hidden-overflow containers can otherwise auto-scroll on focus. */
 .city-page,.city-viewport{overflow:clip}
+/* A narrow desktop window remains playable without an orientation overlay. */
+@media(max-width:600px) and (orientation:portrait){
+  body[data-device=desktop] .city-toolbar{left:8px;right:8px;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:0;padding:6px 3px}
+  body[data-device=desktop] .city-toolbar button{min-width:0;width:100%;font-size:9px;overflow-wrap:anywhere}
+  body[data-device=desktop] .city-toolbar button>img,body[data-device=desktop] .toolbar-orb,body[data-device=desktop] .toolbar-cog{width:35px;height:35px}
+  body[data-device=desktop] .toolbar-orb svg,body[data-device=desktop] .toolbar-cog .line-icon{width:24px;height:24px}
+  body[data-device=desktop] .city-title{position:absolute;left:50%;top:0;transform:translateX(-50%);width:125px;height:80px;margin-top:-8px}
+  body[data-device=desktop] .city-topbar{align-items:flex-start;gap:5px;padding-top:77px}
+  body[data-device=desktop] .player-card{min-width:0;max-width:53%;width:53%;height:47px;padding-right:6px;gap:5px}
+  body[data-device=desktop] .player-card>img{width:48px;height:48px}
+  body[data-device=desktop] .player-card strong{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body[data-device=desktop] .player-card small{font-size:8px}
+  body[data-device=desktop] .wallet{font-size:10px;gap:3px;padding:2px 5px 2px 2px;margin-top:6px}
+  body[data-device=desktop] .wallet button{font-size:10px;gap:3px}
+  body[data-device=desktop] .wallet img{width:24px;height:24px}
+  body[data-device=desktop] .wallet b{width:18px;height:18px;font-size:17px}
+  body[data-device=desktop] .gem-symbol{font-size:18px;margin-left:0}
+  body[data-device=desktop] #city-controls{top:143px}
+  body[data-device=desktop] .city-side-menu{top:205px}
+}
