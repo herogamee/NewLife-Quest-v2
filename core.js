@@ -27,9 +27,10 @@ export function sceneAssets(music = 'assets/audio/riverside-theme.ogg') {
     'assets/audio/menu-click.wav', 'assets/audio/menu-enter.wav', 'assets/audio/menu-back.wav'];
 }
 export function loadingAssets(music = 'assets/audio/riverside-theme.ogg') {
-  return [...sceneAssets(music), 'assets/art/loading-town.webp', 'assets/art/loading-cat.webp'];
+  return [...sceneAssets(music), 'assets/art/loading-town.webp', 'assets/art/loading-cat.webp', ...GAME_IMAGE_ASSETS];
 }
-export function sceneFromHash(hash) { return ['#loading', '#start'].includes(hash) ? 'loading' : 'home'; }
+export const GAME_IMAGE_ASSETS=Object.freeze(['city-ground','male','female','blacksmith','auction-house','adventurer-guild','hall-of-fame','dungeon','market','academy','hot-springs','wedding-chapel','river-harbor','icon-buy-coin','icon-shop','icon-bag','icon-mail','icon-quests','icon-friends','icon-gifts','icon-news','icon-back','sword','potion','upgrade_stone','pet_fox','outfit','wings','fish','bag-stage','bag-slot','bag-header'].map(name=>`assets/game/${name}.webp`));
+export function sceneFromHash(hash) { if(['#loading','#start'].includes(hash))return 'loading';const name=hash.slice(1);return ['login','register','character','confirm','city'].includes(name)?name:'home'; }
 export function nextBlink(random = Math.random, character = 'male') {
   return (character === 'female' ? 3200 : 2500) + Math.floor(random() * 2800);
 }

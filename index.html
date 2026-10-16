@@ -12,7 +12,8 @@
   <link rel="preload" as="font" href="assets/fonts/Mali-Bold.ttf" type="font/ttf" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="loading.css?v=20261016-2">
-  <script type="module" src="app.js"></script>
+  <link rel="stylesheet" href="game.css?v=flow1">
+  <script type="module" src="app.js?v=flow1"></script>
 </head>
 <body>
   <a class="skip-link" href="#start-button">ข้ามไปปุ่มเริ่มเล่นเกม</a>
@@ -143,7 +144,7 @@
       </div>
       <p class="loading-file-status" id="loading-file-status" role="status" aria-live="polite">กำลังเตรียมไฟล์…</p>
       <div class="loading-actions" id="loading-actions" hidden><button class="blue-button" id="loading-retry" type="button">ลองโหลดอีกครั้ง <svg class="line-icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
-      <p class="loading-next" id="loading-next" hidden><svg class="line-icon" aria-hidden="true"><use href="#i-check"/></svg>หน้าถัดไป: เข้าสู่เกม · อยู่ในขั้นตอนพัฒนาถัดไป</p>
+      <button class="loading-next loading-continue" id="loading-next" type="button" hidden>เข้าสู่เกม <svg class="line-icon" aria-hidden="true"><use href="#i-arrow"/></svg></button>
       <div class="loading-mascot" aria-hidden="true"><div class="mascot-shadow"></div><img id="loading-cat" data-src="assets/art/loading-cat.webp" width="1145" height="1374" alt=""></div>
       <aside class="loading-hint" aria-label="เรื่องเล่าระหว่างเดินทาง"><svg aria-hidden="true"><use href="#i-star"/></svg><p id="loading-hint">พบเพื่อนใหม่ แล้วออกผจญภัยไปด้วยกัน</p><svg aria-hidden="true"><use href="#i-star"/></svg></aside>
     </section>

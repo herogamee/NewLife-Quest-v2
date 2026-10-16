@@ -1,8 +1,9 @@
-import { FEATURES, readPreferences, writePreferences, loadingAssets, sceneFromHash } from './core.js';
+import { FEATURES, readPreferences, writePreferences, loadingAssets, sceneFromHash } from './core.js?v=flow1';
 import { Soundscape } from './audio.js';
 import { LivingWorld, FrameMeter } from './world.js';
 import { LoadingSession } from './loader.js';
 import { LandscapeMode } from './orientation.js';
+import { createGameUI } from './game.js?v=flow1';
 
 const $ = id => document.getElementById(id);
 let storage;
@@ -18,9 +19,11 @@ const audio = new Soundscape(settings, updateSoundUI);
 const sharedHeader = document.querySelector('.site-header');
 const triggers = new WeakMap();
 let activeScene = 'home', toastTimer, hintTimer, hintIndex = 0;
+let sessionStore;try { sessionStore=sessionStorage; } catch { sessionStore=null; }
+const gameUI=createGameUI({storage,sessionStorage:sessionStore,audio,toast,navigate,openDialog});
 const landscape = new LandscapeMode({ document, orientation: screen.orientation,
   isMobile: () => matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent),
-  isActive: () => activeScene === 'loading' });
+  isActive: () => activeScene !== 'home' });
 const hints = ['พบเพื่อนใหม่ แล้วออกผจญภัยไปด้วยกัน', 'แวะกิลด์นักผจญภัย ก่อนเริ่มเรื่องราวบทใหม่', 'เสื้อผ้าและอุปกรณ์ เล่าเรื่องราวในแบบคุณ', 'พักสักนิด แล้วค่อยออกเดินทางต่อ'];
 const loader = new LoadingSession({ onState: renderLoading, prepare: prepareLoadingArt });
 
@@ -61,14 +64,15 @@ function resetPointer() {
   document.documentElement.style.setProperty('--pointer-y', '0px');
 }
 function syncOrientation(focus = false) {
-  const show = activeScene === 'loading' && portrait.matches;
+  const show = activeScene !== 'home' && portrait.matches;
   const wasShown = !$('rotate-notice').hidden;
   $('rotate-notice').hidden = !show;
-  $('loading-page').inert = show;
+  for(const id of ['loading-page','login-page','wizard-page','city-page'])$(id).inert=show;
   $('loading-page').classList.toggle('orientation-blocked', show);
   $('rotate-try').hidden = !landscape.available;
   if (focus && show) $('rotate-title').focus({ preventScroll: true });
-  else if (focus && wasShown && activeScene === 'loading') $('loading-heading').focus({ preventScroll: true });
+  else if (focus && wasShown && activeScene !== 'home') $(activeScene==='loading'?'loading-heading':gameUI.focusTarget(activeScene)).focus({ preventScroll: true });
+  if(show)for(const dialog of document.querySelectorAll('dialog[open]'))dialog.close();
 }
 function openDialog(dialog, trigger) {
   if (dialog.open) return;
@@ -146,39 +150,49 @@ async function prepareLoadingArt(signal) {
 }
 function beginLoad() { return loader.start(loadingAssets(audio.music.src.endsWith('.mp3') ? 'assets/audio/riverside-theme.mp3' : 'assets/audio/riverside-theme.ogg')); }
 function renderRoute({ initial = false } = {}) {
-  const next = sceneFromHash(location.hash);
+  const requested=sceneFromHash(location.hash),next=gameUI.resolveRoute(requested);
+  if(next!==requested)history.replaceState(null,'','#'+next);
   if (!initial && next === activeScene) return;
   for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close();
+  gameUI.leave();
   activeScene = next;
   $('home').hidden = next !== 'home'; $('loading-page').hidden = next !== 'loading';
   document.body.dataset.scene = next;
-  document.querySelector('.edition').hidden = next === 'loading'; $('route-back').hidden = next !== 'loading';
+  document.querySelector('.edition').hidden = next !== 'home'; $('route-back').hidden = next === 'home'||next==='city';
+  gameUI.show(next);
+  const skip=document.querySelector('.skip-link');skip.href=next==='home'?'#start-button':next==='loading'?'#loading-heading':'#'+gameUI.focusTarget(next);skip.textContent=next==='home'?'ข้ามไปปุ่มเริ่มเล่นเกม':'ข้ามไปเนื้อหาหลัก';
   if (next === 'loading') {
     $('loading-controls').append(sharedHeader);
     for (const image of [$('loading-town'), $('loading-cat')]) if (!image.getAttribute('src')) image.src = image.dataset.src;
     loadingWorld.resize(); document.title = 'NewLife Quest — กำลังเตรียมการผจญภัย';
     beginLoad(); if (!initial) $('loading-heading').focus({ preventScroll: true });
-  } else {
+  } else if(next==='home') {
     loader.cancel(); landscape.release(); $('header-home-slot').after(sharedHeader);
     world.resize(); document.title = 'NewLife Quest — เริ่มต้นการผจญภัย';
     if (!initial) $('start-button').focus({ preventScroll: true });
+  } else {
+    loader.cancel();const slot=next==='city'?'city-controls':next==='login'?'login-controls':'wizard-controls';$(slot).append(sharedHeader);
+    const title=next==='city'?'เมืองริมน้ำ':next==='login'?'เข้าสู่เกม':'เริ่มต้นการผจญภัย';document.title=`NewLife Quest — ${title}`;
+    if(!initial)$(gameUI.focusTarget(next)).focus({preventScroll:true});
   }
   resetPointer(); syncOrientation(!initial); updateMotion(); window.scrollTo(0, 0);
 }
+function navigate(next){history.pushState({nlqRoute:next},'','#'+next);renderRoute();}
 function launch() {
   audio.gesture(); audio.effect('enter'); if (activeScene === 'loading') return;
   history.pushState({ nlqRoute: 'loading', fromHome: true }, '', '#loading'); renderRoute(); landscape.request();
 }
 function goHome() {
   audio.gesture(); audio.effect('back'); loader.cancel(); landscape.release();
-  if (history.state?.nlqRoute === 'loading' && history.state.fromHome) history.back();
-  else { history.replaceState(null, '', location.pathname + location.search); renderRoute(); }
+  history.pushState(null, '', location.pathname + location.search); renderRoute();
 }
 $('start-button').addEventListener('click', launch);
 $('feature-start').addEventListener('click', () => { $('feature-dialog').close(); launch(); });
 $('route-back').addEventListener('click', goHome);
 $('loading-brand').addEventListener('click', event => { event.preventDefault(); goHome(); });
 $('loading-retry').addEventListener('click', () => { audio.gesture(); audio.effect('enter'); beginLoad(); });
+$('loading-next').addEventListener('click',()=>{audio.gesture();audio.effect('enter');navigate(gameUI.hasSession()?'city':'login');});
+document.querySelector('.skip-link').addEventListener('click',event=>{event.preventDefault();const target=$(event.currentTarget.getAttribute('href').slice(1));target?.focus({preventScroll:false});});
 $('rotate-back').addEventListener('click', goHome);
 $('rotate-try').addEventListener('click', async () => { audio.gesture(); audio.effect(); if (!await landscape.request()) toast('หมุนโทรศัพท์เป็นแนวนอน เพื่อไปต่อได้เลย'); });
 addEventListener('hashchange', () => renderRoute()); addEventListener('popstate', () => renderRoute());
