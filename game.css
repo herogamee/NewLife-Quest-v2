@@ -18,3 +18,5 @@
 @media(orientation:landscape) and (max-height:520px){.city-zoom{right:58px}}
 .city-building[data-service=blacksmith] .location-name{bottom:calc(100% - 45px)}.city-building[data-service=market] .location-name{bottom:calc(100% - 85px)}.toolbar-orb{display:grid;place-items:center;width:64px;height:64px;border:3px solid #e7bd6c;border-radius:50%;background:radial-gradient(circle at 35% 25%,#f4ffff,#41c8ff 15%,#186af3 40%,#194581 67%,#132e4c 80%);box-shadow:inset 0 0 0 2px #405c84,inset -5px -5px 12px #031a5e,0 3px 4px #102a4055}.toolbar-orb svg{width:41px;height:41px;filter:drop-shadow(0 0 5px #edfdff);transform:rotate(15deg)}
 @media(max-width:1100px){.toolbar-orb{width:49px;height:49px}.toolbar-orb svg{width:32px;height:32px}}@media(orientation:landscape) and (max-height:520px){.toolbar-orb{width:40px;height:40px}.toolbar-orb svg{width:27px;height:27px}}@media(orientation:landscape) and (max-height:350px){.toolbar-orb{width:34px;height:34px}.toolbar-orb svg{width:23px;height:23px}}
+/* The camera owns panning. Hidden-overflow containers can otherwise auto-scroll on focus. */
+.city-page,.city-viewport{overflow:clip}
